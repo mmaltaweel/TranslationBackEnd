@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Core.Enities.ProjectAggregate;
 using Core.Interfaces;
-using Core.Mapper;
 using Core.Services;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,7 +9,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using NLog.Extensions.Logging;
 
 namespace API;
 
@@ -61,13 +59,13 @@ public class Program
 
         // Register your services
         builder.Services.AddScoped<IProjectService, ProjectService>();
+        builder.Services.AddScoped<IProjectTaskService, ProjectTaskService>();
         builder.Services.AddSingleton<ILog>(new LoggerFake());
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             options.JsonSerializerOptions.WriteIndented = true;
         });
-        builder.Services.AddAutoMapper(typeof(MappingProfile));
         builder.Services.AddEndpointsApiExplorer();
         //builder.Services.AddSwaggerGen();
         builder.Services.AddSwaggerGen(c =>

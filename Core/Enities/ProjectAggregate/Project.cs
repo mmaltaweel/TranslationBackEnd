@@ -11,12 +11,10 @@ public class Project : BaseEntity, IAggregateRoot
     public DateTime EndDate { get; private set; }
     public ProjectStatus Status { get; private set; }
 
-    public string ProjectManagerId { get; set; }
+    public string ProjectManagerId { get; private set; }
     public virtual User ProjectManager { get; private set; }
 
     public virtual List<ProjectTask> Tasks { get; private set; } = new List<ProjectTask>();
-  
-
 
     public Project()
     {
@@ -34,7 +32,7 @@ public class Project : BaseEntity, IAggregateRoot
 
         if (endDate < startDate)
             throw new InvalidProjectDatesException(startDate, endDate);
-        
+
         //check if the user a manager to CreateProject
         if (projectManager.Role != UserRole.ProjectManager)
             throw new InvalidUserRoleForManagingProjectException(projectManager.Role);
@@ -43,37 +41,87 @@ public class Project : BaseEntity, IAggregateRoot
         Description = description;
         StartDate = startDate;
         EndDate = endDate;
-        Status = ProjectStatus.NotStarted;
+        Status = ProjectStatus.InProgress;
         ProjectManager = projectManager ?? throw new NullUserRoleException();
-        ProjectManagerId= projectManager.Id;
+        ProjectManagerId = projectManager.Id;
         Tasks = new List<ProjectTask>();
     }
 
-    public void UpdateManager(User newManager)
+    public void UpdateProject(DateTime newStartDate, DateTime newEndDate, string newName, string newDescription)
     {
-        ProjectManager = newManager ?? throw new ArgumentNullException(nameof(newManager));
-        ProjectManagerId= newManager.Id;
-    }
+        if (this.ProjectManager.Role != UserRole.ProjectManager)
+            throw new InvalidUserRoleForManagingProjectException(this.ProjectManager.Role);
 
-    public void UpdateStartDate(DateTime newStartDate)
-    {
+        // Update the start date
+
         if (newStartDate > EndDate)
             throw new InvalidOperationException("Start date cannot be after the end date.");
-
         StartDate = newStartDate;
-    }
 
-    public void UpdateEndDate(DateTime newEndDate)
-    {
+
+        // Update the end date and do validation end>start
+
         if (newEndDate < StartDate)
             throw new InvalidOperationException("End date cannot be before the start date.");
-
         EndDate = newEndDate;
+
+        //update the name if not empty
+        if (!string.IsNullOrWhiteSpace(newName))
+        {
+            Name = newName;
+        }
+
+        //update the description if not empty
+        if (!string.IsNullOrWhiteSpace(newDescription))
+        {
+            Description = newDescription;
+        }
     }
+
+    #region status domain logic
+
+    /* Project and Task status states Business Assumptions for UpdateProjectStatus method:
+        1- All new projects and tasks are initialized with the status InProgress. ok
+        2- Project Completion Criteria:
+           a- The manager manually selects Mark as Completed we need to check if all tasks are compeleted as well before changing the project status done
+           b- All associated tasks have the status Completed this should be done in service layer by translator action that take action on a specifc task.
+           c- Attempting to mark a project as Completed when one or more tasks are still InProgress will result in an exception. done
+        3- Overdue Status:
+            A project will be marked as Overdue if:
+              a- At least one associated task has the status Overdue.
+              b- The project's end date has passed the current date.
+     */
+
+    public void MarkProjectAsCompleted()
+    {
+        if (this.ProjectManager.Role != UserRole.ProjectManager)
+            throw new InvalidUserRoleForManagingProjectException(this.ProjectManager.Role);
+        
+        if (this.Tasks.Any(x =>
+                x.Status != ProjectStatus.Completed)) //  all tasks should be completed before update the project status
+            throw new InvalidTaskCompletionException();
+
+        this.Status = ProjectStatus.Completed;
+    }
+
+    public void MarkProjectAsOverDue()
+    {
+        if (EndDate < DateTime.Now || this.Tasks.Any(x => x.Status == ProjectStatus.Overdue))
+        {
+            this.Status = ProjectStatus.Overdue;
+        }
+    }
+    #endregion
+
+    // Since DDD principles are applied here, the Project is considered the aggregate root,
+    // and it alone is responsible for managing the state changes of its child entities.
+
+    #region task domain logic
+
     public ProjectTask CreateTask(string title, string description, DateTime dueDate, User assignedTranslatorId)
     {
         // Create a new task
-        var newTask = new ProjectTask(title,description, dueDate,assignedTranslatorId);
+        var newTask = new ProjectTask(title, description, dueDate, assignedTranslatorId);
 
         // Add the task to the project's task list
         Tasks.Add(newTask);
@@ -81,7 +129,9 @@ public class Project : BaseEntity, IAggregateRoot
         // Return the newly created task
         return newTask;
     }
-    public void UpdateTask(int taskId, string newAssigneeId, string newTitle, string newDescription, DateTime? newDueDate, string managerId)
+
+    public void UpdateTask(int taskId, string newAssigneeId, string newTitle, string newDescription,
+        DateTime newDueDate)
     {
         var task = Tasks.FirstOrDefault(t => t.Id == taskId);
         if (task == null)
@@ -89,25 +139,21 @@ public class Project : BaseEntity, IAggregateRoot
             throw new ArgumentException($"Task with ID {taskId} not found in the project.");
         }
 
-        // Update the task's properties if new values are provided
-        if (!string.IsNullOrWhiteSpace(newAssigneeId))
+        task.Update(newDueDate, newTitle, newDescription, newAssigneeId);
+    }
+    public void MarkTaskAsCompleted(int taskId)
+    {
+        var task = Tasks.FirstOrDefault(t => t.Id == taskId);
+        if (task == null)
         {
-            task.UpdateAssignee(newAssigneeId, managerId);
+            throw new ArgumentException($"Task with ID {taskId} not found in the project.");
         }
-
-        if (!string.IsNullOrWhiteSpace(newTitle))
+        task.MarkTaskAsCompleted();
+        
+        //check if all tasks are completed to set project completed as well
+        if (Tasks.All(x => x.Status == ProjectStatus.Completed))
         {
-            task.UpdateTitle(newTitle);
-        }
-
-        if (!string.IsNullOrWhiteSpace(newDescription))
-        {
-            task.UpdateDescription(newDescription);
-        }
-
-        if (newDueDate.HasValue)
-        {
-            task.UpdateDueDate(newDueDate.Value);
+            this.Status= ProjectStatus.Completed;
         }
     }
     public void RemoveTask(ProjectTask task)
@@ -119,24 +165,5 @@ public class Project : BaseEntity, IAggregateRoot
 
         Tasks.Remove(task);
     }
-
-    public void StartProject()
-    {
-        if (Status != ProjectStatus.NotStarted)
-            throw new ProjectAlreadyStartedException();
-
-        Status = ProjectStatus.InProgress;
-    }
-
-    public void CompleteProject()
-    {
-        if (Tasks.All(t => t.Status == TaskEStatus.Completed))
-        {
-            Status = ProjectStatus.Completed;
-        }
-        else
-        {
-            throw new IncompleteTasksException();
-        }
-    }
+    #endregion
 }

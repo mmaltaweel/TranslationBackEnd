@@ -24,7 +24,7 @@ public class TranslationManagementDbContext:  IdentityDbContext<User>
     {
          if (!optionsBuilder.IsConfigured)
          {
-             optionsBuilder.UseSqlServer("");
+             optionsBuilder.UseSqlServer("Server=tcp:mtaweelsqlserver.database.windows.net,1433;Initial Catalog=TranslationManagmenetSystem;Persist Security Info=False;User ID=mmaltaweel;Password=Birmingham!@#;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
          }
          optionsBuilder.UseLazyLoadingProxies();
     }

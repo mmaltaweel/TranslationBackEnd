@@ -1,5 +1,3 @@
-using Core.Exceptions;
-using Core.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
 namespace Core.Enities.ProjectAggregate;
