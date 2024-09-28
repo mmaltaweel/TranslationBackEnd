@@ -18,8 +18,7 @@ public static class MapperHelper
             StatusDisplayName = project.Status.ToString(),
             Tasks = project.Tasks.Select(t => t.ToTaskResponse()).ToList()
         };
-    }
-
+    }  
     public static TaskResponse ToTaskResponse(this ProjectTask task)
     {
         return new TaskResponse
@@ -30,7 +29,8 @@ public static class MapperHelper
             StatusDisplayName = task.Status.ToString(),
             Description = task.Description,
             DueDate = task.DueDate,
-            AssignedTranslatorId = task.AssignedTranslatorId
+            AssignedTranslatorId = task.AssignedTranslatorId,
+            ProjectName=task.Project.Name
         };
     }
 }

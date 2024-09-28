@@ -15,13 +15,17 @@ namespace Core.Services;
 public class ProjectTaskService: IProjectTaskService
 {
     private readonly IAsyncRepository<Project> _projectRepository;
+    private readonly IAsyncRepository<ProjectTask> _projectTaskRepository;
+
     private readonly IAsyncRepository<User> _userRepository;
     private ILog log;
-    public ProjectTaskService(IAsyncRepository<Project> projectRepository, IAsyncRepository<User> userRepository, ILog log)
+    public ProjectTaskService(IAsyncRepository<Project> projectRepository, IAsyncRepository<User> userRepository,
+        ILog log, IAsyncRepository<ProjectTask> projectTaskRepository)
     {
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         this.log = log;
+        _projectTaskRepository = projectTaskRepository;
     }
     
     public async Task<ServiceResult<ProjectResponse>> CreateTask(int projectId, ProjectTaskRequest requestDto,
@@ -115,31 +119,31 @@ public class ProjectTaskService: IProjectTaskService
         }
     }
 
-    public async Task<ServiceResult<ProjectResponse>> GetProjectsAssignedToTranslator(ClaimsPrincipal translatorUser)
+    public async Task<ServiceResult<TaskResponse>> GetTasksAssignedToTranslator(ClaimsPrincipal translatorUser)
     {
         try
         {
-            var spec = new GetTranslatorProjectsSpecification(translatorUser.GetUserId());
+            //  Fetch the user 
+            var user = await _userRepository.GetByIdAsync(translatorUser.GetUserId());
+            
+            // Fetch the associated tasks for this translator
+            var tasks = user.AssignedTasks;
+            var result = tasks.Select(p => p.ToTaskResponse()).ToList();
 
-            var projects = await _projectRepository.ListAsync(spec);
-
-            // Fetch projects and their associated tasks for this manager
-            var result = projects.Select(p => p.ToProjectResponse()).ToList();
-
-            return new ServiceResult<ProjectResponse>(result, true, "Projects Retrieved", HttpStatusCode.OK);
+            return new ServiceResult<TaskResponse>(result, true, "Tasks Retrieved", HttpStatusCode.OK,0);
         }
         catch (DomainException ex)
         {
             log.Error(ex.Message);
-            return new ServiceResult<ProjectResponse>(false, ex.Message, HttpStatusCode.BadRequest);
+            return new ServiceResult<TaskResponse>(false, ex.Message, HttpStatusCode.BadRequest);
         }
         catch (Exception ex)
         {
             log.Error(ex.Message);
-            return new ServiceResult<ProjectResponse>(false, ex.Message, HttpStatusCode.InternalServerError);
+            return new ServiceResult<TaskResponse>(false, ex.Message, HttpStatusCode.InternalServerError);
         }
     }
- 
+
 
     public async Task<ServiceResult<ProjectResponse>> RemoveTask(int projectId, int taskId, ClaimsPrincipal user)
     {

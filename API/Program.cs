@@ -21,9 +21,20 @@ public class Program
         // Add services to the container.
 
         builder.Services.AddControllers();
+        
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowLocalhost4200",
+                builder =>
+                {
+                    builder.WithOrigins("http://localhost:4200")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+        });
 
         builder.Services.AddDbContext<TranslationManagementDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer("Server=tcp:mtaweelsqlserver.database.windows.net,1433;Initial Catalog=TranslationManagmenetSystem;Persist Security Info=False;User ID=mmaltaweel;Password=BsdW@dsasd182!@#;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60"));
 
         // For Identity
         builder.Services.AddIdentity<User, IdentityRole>()
@@ -55,6 +66,7 @@ public class Program
             });
         // Register your repositories
         builder.Services.AddScoped<IAsyncRepository<Project>, EfRepository<Project>>();
+        builder.Services.AddScoped<IAsyncRepository<ProjectTask>, EfRepository<ProjectTask>>();
         builder.Services.AddScoped<IAsyncRepository<User>, EfRepository<User>>();
 
         // Register your services
@@ -112,7 +124,7 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
-
+        app.UseCors("AllowLocalhost4200"); // Use the CORS policy
 
         app.MapControllers();
 

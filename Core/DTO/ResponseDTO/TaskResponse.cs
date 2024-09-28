@@ -13,5 +13,6 @@ namespace Core.DTO.ResponseDTO
         public ProjectStatus Status { get; set; }
 
         public DateTime DueDate { get;  set; }
+        public string ProjectName{ get;  set; }
     }
 }

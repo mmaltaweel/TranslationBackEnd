@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using API.RequestDTO;
 using Core.DTO.ResponseDTO;
+using Core.DTO.Shared;
 using Core.Enities.ProjectAggregate;
 
 namespace Core.Interfaces;
@@ -11,5 +12,5 @@ public interface IProjectService
     Task<ServiceResult<ProjectResponse>> UpdateProject(int projectId, ProjectRequest requestDto, ClaimsPrincipal user);
     Task<ServiceResult<bool>> MarkProjectAsCompleted(int projectId, ClaimsPrincipal user);
     Task<ServiceResult<ProjectResponse>> RemoveProject(int projectId, ClaimsPrincipal user);
-    Task<ServiceResult<ProjectResponse>> GetProjectsAssignedToManager(ClaimsPrincipal managerUser);
+    Task<ServiceResult<ProjectResponse>> GetProjectsAssignedToManager(SharedParamFilter input);
 }

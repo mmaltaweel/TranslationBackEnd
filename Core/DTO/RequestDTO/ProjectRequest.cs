@@ -1,6 +1,8 @@
+using Core.DTO.Shared;
+
 namespace API.RequestDTO;
 
-public class ProjectRequest
+public class ProjectRequest:PaginationFilter
 {
     public string Name { get; set; }            
     public string Description { get; set; }    

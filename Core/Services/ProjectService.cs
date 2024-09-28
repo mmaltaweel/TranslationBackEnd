@@ -4,6 +4,7 @@ using API.RequestDTO;
 using Core.Interfaces;
 using Ardalis.GuardClauses;
 using Core.DTO.ResponseDTO;
+using Core.DTO.Shared;
 using Core.Enities.ProjectAggregate;
 using Core.Exceptions;
 using Core.Helpers;
@@ -138,18 +139,17 @@ public class ProjectService : IProjectService
         }
     }
 
-    public async Task<ServiceResult<ProjectResponse>> GetProjectsAssignedToManager(ClaimsPrincipal managerUser)
+    public async Task<ServiceResult<ProjectResponse>> GetProjectsAssignedToManager(SharedParamFilter input)
     {
         try
-        {
-            //  Fetch the user 
-            var user = await _userRepository.GetByIdAsync(managerUser.GetUserId());
-
+        { 
+            // sepc to load the project and tasks pagination 
+            var spec = new ProjectWithTasksForManagerSpecification(input);
             // Fetch projects and their associated tasks for this manager
-            var projects = user.ManagedProjects;
-            var result = projects.Select(p => p.ToProjectResponse()).ToList();
+            var projects = await _projectRepository.ListAsync(spec);
+            var result = projects.list.Select(p => p.ToProjectResponse()).ToList();
 
-            return new ServiceResult<ProjectResponse>(result, true, "Projects Retrieved", HttpStatusCode.OK);
+            return new ServiceResult<ProjectResponse>(result, true, "Projects Retrieved", HttpStatusCode.OK, projects.totalCount);
         }
         catch (DomainException ex)
         {

@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using API.RequestDTO;
+using Core.DTO.Shared;
 using Core.Enities.ProjectAggregate;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -19,9 +21,11 @@ public class ProjectController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> Get([FromQuery] int skip = 0, [FromQuery] int take = 7)
     {
-        var result = await _projectService.GetProjectsAssignedToManager(User);
+        var filter = CreateSharedParamFilter(skip, take, User);
+        
+        var result = await _projectService.GetProjectsAssignedToManager(filter);
 
         if (result.Success)
         {
@@ -77,4 +81,13 @@ public class ProjectController : ControllerBase
         }
         return BadRequest(result);
     } 
+    private SharedParamFilter CreateSharedParamFilter(int skip, int take, ClaimsPrincipal user)
+    {
+        return new SharedParamFilter
+        {
+            Skip = skip,
+            Take = take,
+            User = user
+        };
+    }
 }

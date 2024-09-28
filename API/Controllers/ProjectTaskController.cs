@@ -21,14 +21,15 @@ public class ProjectTaskController : Controller
     [Authorize(Roles = "Translator, ProjectManager")]
     public async Task<IActionResult> Get()
     {
-        var result = await _projectTaskService.GetProjectsAssignedToTranslator(User);
+        // var result = await _projectTaskService.GetProjectsAssignedToTranslator(User);
+        //
+        // if (result.Success)
+        // {
+        //     return Ok(result);
+        // }
 
-        if (result.Success)
-        {
-            return Ok(result);
-        }
-
-        return BadRequest(result);
+       //return BadRequest(result);
+       return Ok();
     }
 
     [HttpPost("{projectId}/tasks")]
