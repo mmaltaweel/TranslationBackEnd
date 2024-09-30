@@ -49,6 +49,12 @@ public class Project : BaseEntity, IAggregateRoot
 
     public void UpdateProject(DateTime newStartDate, DateTime newEndDate, string newName, string newDescription)
     {
+        
+        //if the project is completed then update is declined
+        if(this.Status==ProjectStatus.Completed)
+        {
+            throw new CompleteProjectAreNotModifiableException();
+        }
         if (this.ProjectManager.Role != UserRole.ProjectManager)
             throw new InvalidUserRoleForManagingProjectException(this.ProjectManager.Role);
 
@@ -96,11 +102,8 @@ public class Project : BaseEntity, IAggregateRoot
     {
         if (this.ProjectManager.Role != UserRole.ProjectManager)
             throw new InvalidUserRoleForManagingProjectException(this.ProjectManager.Role);
-        
-        if (this.Tasks.Any(x =>
-                x.Status != ProjectStatus.Completed)) //  all tasks should be completed before update the project status
-            throw new InvalidTaskCompletionException();
 
+        this.Tasks.ForEach(x => x.MarkTaskAsCompleted()) ; //  all tasks will be completed before update the project status
         this.Status = ProjectStatus.Completed;
     }
 
@@ -158,11 +161,19 @@ public class Project : BaseEntity, IAggregateRoot
     }
     public void RemoveTask(ProjectTask task)
     {
-        if (!Tasks.Contains(task))
+        var removedTask = Tasks.FirstOrDefault(x => x.Id == task.Id);
+        if (removedTask is null)
         {
             throw new InvalidOperationException("Task does not exist in the project.");
         }
-
+        else
+        {
+            //if the task is completed then update is declined
+            if(removedTask.Status==ProjectStatus.Completed)
+            {
+                throw new CompleteProjectAreNotModifiableException();
+            }
+        }
         Tasks.Remove(task);
     }
     #endregion

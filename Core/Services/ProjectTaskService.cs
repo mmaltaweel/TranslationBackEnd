@@ -3,6 +3,7 @@ using System.Security.Claims;
 using API.RequestDTO;
 using Ardalis.GuardClauses;
 using Core.DTO.ResponseDTO;
+using Core.DTO.Shared;
 using Core.Enities.ProjectAggregate;
 using Core.Exceptions;
 using Core.Helpers;
@@ -12,13 +13,14 @@ using Core.Specifications;
 
 namespace Core.Services;
 
-public class ProjectTaskService: IProjectTaskService
+public class ProjectTaskService : IProjectTaskService
 {
     private readonly IAsyncRepository<Project> _projectRepository;
     private readonly IAsyncRepository<ProjectTask> _projectTaskRepository;
 
     private readonly IAsyncRepository<User> _userRepository;
     private ILog log;
+
     public ProjectTaskService(IAsyncRepository<Project> projectRepository, IAsyncRepository<User> userRepository,
         ILog log, IAsyncRepository<ProjectTask> projectTaskRepository)
     {
@@ -27,7 +29,7 @@ public class ProjectTaskService: IProjectTaskService
         this.log = log;
         _projectTaskRepository = projectTaskRepository;
     }
-    
+
     public async Task<ServiceResult<ProjectResponse>> CreateTask(int projectId, ProjectTaskRequest requestDto,
         ClaimsPrincipal user)
     {
@@ -38,7 +40,7 @@ public class ProjectTaskService: IProjectTaskService
             var project = await _projectRepository.GetByIdAsync(specification);
 
             Guard.Against.Null(project, nameof(project), "user is not authorized to do this action");
-
+            Guard.Against.Null(requestDto, nameof(requestDto), "requestDto is null");
             // Assign the task to the project
             //check if the AssignedTranslatorId is there 
             var taskAssignee = await _userRepository.GetByIdAsync(requestDto.AssignedTranslatorId);
@@ -119,18 +121,17 @@ public class ProjectTaskService: IProjectTaskService
         }
     }
 
-    public async Task<ServiceResult<TaskResponse>> GetTasksAssignedToTranslator(ClaimsPrincipal translatorUser)
+    public async Task<ServiceResult<TaskResponse>> GetTasksAssignedToTranslator(SharedParamFilter input)
     {
         try
         {
-            //  Fetch the user 
-            var user = await _userRepository.GetByIdAsync(translatorUser.GetUserId());
-            
-            // Fetch the associated tasks for this translator
-            var tasks = user.AssignedTasks;
-            var result = tasks.Select(p => p.ToTaskResponse()).ToList();
+            var spec = new TasksForTranslatorSpecification(input);
+            var specCount = new TasksForTranslatorSpecificationCount(input);
+            var tasks = await _projectTaskRepository.ListAsync(spec, specCount);
+            var result = tasks.list.Select(t => t.ToTaskResponse()).ToList();
 
-            return new ServiceResult<TaskResponse>(result, true, "Tasks Retrieved", HttpStatusCode.OK,0);
+            return new ServiceResult<TaskResponse>(result, true, "Tasks Retrieved", HttpStatusCode.OK,
+                tasks.totalCount);
         }
         catch (DomainException ex)
         {
@@ -157,6 +158,15 @@ public class ProjectTaskService: IProjectTaskService
 
             // Find and remove the specific task
             var task = project.Tasks.FirstOrDefault(t => t.Id == taskId);
+
+            Guard.Against.Null(task, nameof(task), "task not found");
+
+            //Complete Tasks Are Not Modifiable 
+            if (task.Status == ProjectStatus.Completed)
+            {
+                throw new CompleteTasksAreNotModifiableException();
+            }
+
             Guard.Against.Null(task, nameof(task));
 
             project.RemoveTask(task);
@@ -177,5 +187,4 @@ public class ProjectTaskService: IProjectTaskService
             return new ServiceResult<ProjectResponse>(false, ex.Message, HttpStatusCode.BadRequest);
         }
     }
- 
 }

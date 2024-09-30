@@ -1,7 +1,5 @@
-using System.Security.Claims;
+using API.Controllers.Helpers;
 using API.RequestDTO;
-using Core.DTO.Shared;
-using Core.Enities.ProjectAggregate;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,10 +19,10 @@ public class ProjectController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] int skip = 0, [FromQuery] int take = 7)
+    public async Task<IActionResult> Get([FromQuery] int skip = 0, [FromQuery] int take = 1000)
     {
-        var filter = CreateSharedParamFilter(skip, take, User);
-        
+        var filter = ControllersHelper.CreateSharedParamFilter(skip, take, User);
+
         var result = await _projectService.GetProjectsAssignedToManager(filter);
 
         if (result.Success)
@@ -69,25 +67,17 @@ public class ProjectController : ControllerBase
         }
 
         return BadRequest(result);
-    } 
+    }
 
-    [HttpPut("{id}/status/completed")]
-    public async Task<IActionResult> MarkProjectAsCompleted(int id)
+    [HttpPut("{projectId}/status/completed")]
+    public async Task<IActionResult> MarkProjectAsCompleted(int projectId)
     {
-        var result=await _projectService.MarkProjectAsCompleted(id,User);
+        var result = await _projectService.MarkProjectAsCompleted(projectId, User);
         if (result.Success)
         {
             return NoContent();
         }
+
         return BadRequest(result);
-    } 
-    private SharedParamFilter CreateSharedParamFilter(int skip, int take, ClaimsPrincipal user)
-    {
-        return new SharedParamFilter
-        {
-            Skip = skip,
-            Take = take,
-            User = user
-        };
     }
 }

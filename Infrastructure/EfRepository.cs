@@ -31,11 +31,14 @@ namespace Infrastructure;
             return await _dbContext.Set<T>().ToListAsync();
         }
 
-        public async Task<(IReadOnlyList<T?> list,int totalCount)> ListAsync(ISpecification<T> spec)
+        public async Task<(IReadOnlyList<T?> list,int totalCount)> ListAsync(ISpecification<T> spec,ISpecification<T> countSpec)
         {
-            return (await ApplySpecification(spec).ToListAsync(), await _dbContext.Set<T>().CountAsync());
+            return (await ApplySpecification(spec).ToListAsync(), await CountAsync(countSpec));
         }
-
+        public async Task<IReadOnlyList<T>> ListAsync(ISpecification<T> spec)
+        {
+            return await ApplySpecification(spec).ToListAsync();
+        }
         public async Task<int> CountAsync(ISpecification<T> spec)
         {
             return await ApplySpecification(spec).CountAsync();

@@ -1,3 +1,4 @@
+using API.Controllers.Helpers;
 using API.RequestDTO;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -5,31 +6,29 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
+[ApiController]
 [Route("api/[controller]")]
 public class ProjectTaskController : Controller
 {
-    private readonly IProjectService _projectService;
     private readonly IProjectTaskService _projectTaskService;
-
     public ProjectTaskController(IProjectService projectService, IProjectTaskService projectTaskService)
     {
-        _projectService = projectService;
         _projectTaskService = projectTaskService;
     }
 
     [HttpGet]
     [Authorize(Roles = "Translator, ProjectManager")]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> Get([FromQuery] int skip = 0, [FromQuery] int take = 7)
     {
-        // var result = await _projectTaskService.GetProjectsAssignedToTranslator(User);
-        //
-        // if (result.Success)
-        // {
-        //     return Ok(result);
-        // }
+        var filter = ControllersHelper.CreateSharedParamFilter(skip, take, User);
+        var result = await _projectTaskService.GetTasksAssignedToTranslator(filter);
 
-       //return BadRequest(result);
-       return Ok();
+        if (result.Success)
+        {
+            return Ok(result);
+        }
+
+        return BadRequest(result);
     }
 
     [HttpPost("{projectId}/tasks")]
@@ -70,15 +69,17 @@ public class ProjectTaskController : Controller
 
         return BadRequest(result);
     }
+
     [HttpPut("{taskId}/status/completed")]
     [Authorize(Roles = "Translator")]
     public async Task<IActionResult> MarkTaskAsCompleted(int taskId)
     {
-        var result=await _projectTaskService.MarkTaskAsCompleted(taskId,User);
+        var result = await _projectTaskService.MarkTaskAsCompleted(taskId, User);
         if (result.Success)
         {
             return NoContent();
         }
+
         return BadRequest(result);
-    } 
+    }
 }

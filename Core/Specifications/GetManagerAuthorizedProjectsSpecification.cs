@@ -7,6 +7,6 @@ internal class GetManagerAuthorizedProjectsSpecification : BaseSpecification<Pro
 {
         public GetManagerAuthorizedProjectsSpecification(int projectId,string userId) : base(x => (x.ProjectManagerId == userId) && (x.Id == projectId))
         {
-
+            AddInclude(x=>x.Tasks);
         } 
     }

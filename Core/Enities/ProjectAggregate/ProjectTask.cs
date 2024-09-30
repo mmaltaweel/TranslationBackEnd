@@ -41,6 +41,12 @@ public class ProjectTask : BaseEntity
 
     public void Update(DateTime newDueDate, string newTitle, string newDescription, string newAssigneeId)
     {
+        //if the task is completed then update is declined
+        if(this.Status==ProjectStatus.Completed)
+        {
+            throw new CompleteProjectAreNotModifiableException();
+        }
+        
         if (this.Project.ProjectManager.Role != UserRole.ProjectManager)
             throw new InvalidUserRoleForTaskAssignmentException(this.Project.ProjectManager.Role);
 
@@ -71,18 +77,7 @@ public class ProjectTask : BaseEntity
             throw new ProjectAlreadyStartedException();
           
         this.Status = newStatus;
-    }
-    public void CompleteTask()
-    {
-        if (this.AssignedTranslator.Role != UserRole.Translator)
-            throw new InvalidUserRoleForTaskAssignmentException(this.AssignedTranslator.Role);
-
-        if (Status != ProjectStatus.InProgress)
-            throw new InvalidTaskCompletionException();
-
-        Status = ProjectStatus.Completed;
-    }
-
+    } 
     public void MarkTaskAsCompleted()
     {
         this.Status=ProjectStatus.Completed;

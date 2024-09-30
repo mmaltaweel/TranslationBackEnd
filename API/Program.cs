@@ -71,7 +71,9 @@ public class Program
 
         // Register your services
         builder.Services.AddScoped<IProjectService, ProjectService>();
+        builder.Services.AddScoped<IReportService, ReportService>();
         builder.Services.AddScoped<IProjectTaskService, ProjectTaskService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddSingleton<ILog>(new LoggerFake());
         builder.Services.AddControllers().AddJsonOptions(options =>
         {

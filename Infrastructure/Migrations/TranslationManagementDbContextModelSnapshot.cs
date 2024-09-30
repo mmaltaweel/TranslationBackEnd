@@ -60,7 +60,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("ProjectManagerId");
 
-                    b.ToTable("Projects");
+                    b.ToTable("Projects", (string)null);
                 });
 
             modelBuilder.Entity("Core.Enities.ProjectAggregate.ProjectTask", b =>
@@ -100,7 +100,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("Tasks");
+                    b.ToTable("Tasks", (string)null);
                 });
 
             modelBuilder.Entity("Core.Enities.ProjectAggregate.User", b =>

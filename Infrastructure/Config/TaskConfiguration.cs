@@ -29,12 +29,7 @@ public class TaskConfiguration : IEntityTypeConfiguration<ProjectTask>
         builder.Property(t => t.Description).HasMaxLength(500);
         builder.Property(t => t.DueDate).IsRequired();
         builder.Property(t => t.Status).IsRequired();
-
-        builder.HasOne(t => t.Project)
-            .WithMany(p => p.Tasks)
-            .HasForeignKey(t => t.ProjectId)
-            .OnDelete(DeleteBehavior.Restrict);
-
+        
         builder.HasOne(t => t.AssignedTranslator)
             .WithMany(u => u.AssignedTasks)
             .HasForeignKey(t => t.AssignedTranslatorId)

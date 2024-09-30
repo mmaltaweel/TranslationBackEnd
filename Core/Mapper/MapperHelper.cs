@@ -30,7 +30,9 @@ public static class MapperHelper
             Description = task.Description,
             DueDate = task.DueDate,
             AssignedTranslatorId = task.AssignedTranslatorId,
-            ProjectName=task.Project.Name
+            ProjectName=task.Project.Name,
+            AssignedTranslator = task.AssignedTranslator.FirstName+ " - " + task.AssignedTranslator.LastName
         };
     }
+    
 }

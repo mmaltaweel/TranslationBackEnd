@@ -24,7 +24,8 @@ public class ProjectService : IProjectService
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         this.log = log;
-    } 
+    }
+
     public async Task<ServiceResult<ProjectResponse>> CreateProject(ProjectRequest requestDto, ClaimsPrincipal user)
     {
         try
@@ -94,7 +95,8 @@ public class ProjectService : IProjectService
             var specification = new GetManagerAuthorizedProjectsSpecification(projectId, user.GetUserId());
             var project = await _projectRepository.GetByIdAsync(specification);
 
-            Guard.Against.Null(project, nameof(project), "user is not authorized to do this action or project not exists");
+            Guard.Against.Null(project, nameof(project),
+                "user is not authorized to do this action or project not exists");
 
             project.MarkProjectAsCompleted();
             await _projectRepository.UpdateAsync(project);
@@ -123,6 +125,12 @@ public class ProjectService : IProjectService
             Guard.Against.Null(project, nameof(project), "user is not authorized to do this action");
 
             // Remove the project (and its associated tasks)
+            //if project already completed then deletion is not valid
+            if (project.Status == ProjectStatus.Completed)
+            {
+                throw new CompleteProjectAreNotModifiableException();
+            }
+
             await _projectRepository.DeleteAsync(project);
             return new ServiceResult<ProjectResponse>(project.ToProjectResponse(), true, "Project Removed",
                 HttpStatusCode.Created);
@@ -142,14 +150,16 @@ public class ProjectService : IProjectService
     public async Task<ServiceResult<ProjectResponse>> GetProjectsAssignedToManager(SharedParamFilter input)
     {
         try
-        { 
+        {
             // sepc to load the project and tasks pagination 
             var spec = new ProjectWithTasksForManagerSpecification(input);
+            var specCount = new ProjectWithTasksForManagerSpecificationCount(input);
             // Fetch projects and their associated tasks for this manager
-            var projects = await _projectRepository.ListAsync(spec);
+            var projects = await _projectRepository.ListAsync(spec, specCount);
             var result = projects.list.Select(p => p.ToProjectResponse()).ToList();
 
-            return new ServiceResult<ProjectResponse>(result, true, "Projects Retrieved", HttpStatusCode.OK, projects.totalCount);
+            return new ServiceResult<ProjectResponse>(result, true, "Projects Retrieved", HttpStatusCode.OK,
+                projects.totalCount);
         }
         catch (DomainException ex)
         {

@@ -9,6 +9,8 @@ namespace Core.DTO.ResponseDTO
         public string Title { get; set; }
         public string Description { get;  set; }
         public string AssignedTranslatorId { get;  set; }
+        public string AssignedTranslator { get;  set; }
+
         public string StatusDisplayName { get; set; } 
         public ProjectStatus Status { get; set; }
 

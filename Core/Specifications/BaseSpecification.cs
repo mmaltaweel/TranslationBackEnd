@@ -46,4 +46,8 @@ namespace Core.Specifications;
         {
             OrderByDescending = orderByDescendingExpression;
         }
+        protected virtual void ApplyGroupBy(Expression<Func<T, object>> groupByExpression)
+        {
+            GroupBy = groupByExpression;
+        }
     }

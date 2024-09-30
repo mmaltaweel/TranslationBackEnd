@@ -13,4 +13,5 @@ public class ProjectWithTasksForManagerSpecification : BaseSpecification<Project
         ApplyPaging(input.Skip, input.Take);
         ApplyOrderByDescending(x => x.Id);
     }
+    
 }
